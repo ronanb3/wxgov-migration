@@ -1,0 +1,2 @@
+This is the initial version of scripts
+It is not mainteained and has been replaced by Ansible scripts
