@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: openpages-{{ target_instance_id.openpage_name }}-provision-data-debug
+  namespace: {{ target_ocp.ocp_project }}
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/arch
+            operator: In
+            values:
+            - amd64
+  automountServiceAccountToken: false
+  containers:
+  - command: ["/bin/sh", "-ec", "upgrade_loader_data.sh"]
+    env:
+    - name: INSTANCE_ID
+      value: "{{ target_instance_id.instance_id }}"
+    - name: INSTANCE_NAME
+      value: {{ target_instance_id.openpage_name }}
+    - name: ZEN_CONTROL_PLANE_NS
+      value: {{ target_ocp.ocp_project }}
+    - name: INSTANCE_NAMESPACE
+      value: {{ target_ocp.ocp_project }}
+    - name: OP_CONTEXT_ROOT
+      value: openpages-{{ target_instance_id.openpage_name }}
+    - name: OP_EXT_HOST
+      valueFrom:
+        configMapKeyRef:
+          key: URL_PREFIX
+          name: product-configmap
+    - name: OP_EXT_PORT
+      value: "443"
+    - name: DATABASE_TYPE
+      value: internal
+    - name: OPDB_PORT
+      value: "50001"
+    - name: SCHEMA_VERSION
+      value: "9.0.0.3.2"
+    - name: OPDB_ALIAS
+      value: OPX
+    - name: OPDB_USER
+      value: openpage
+    - name: OPDB_OWNER
+      value: "db2inst1"
+    image: cp.icr.io/cp/cpd/openpages-cpd-provisioner@{{ provisioner_image_digest }}
+    imagePullPolicy: Always
+    name: opdbprovisioner-pre-install-job-container
+    resources:
+      limits:
+        cpu: 500m
+        ephemeral-storage: 60Mi
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        ephemeral-storage: 60Mi
+        memory: 256Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsUser: 0
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/op-initialpw-secret
+      name: op-initialpw-secret
+    - mountPath: /var/run/op-platform-secret
+      name: op-platform-secret
+    - mountPath: /var/run/op-db-secret
+      name: op-db-secret
+    - mountPath: /var/run/sharedsecrets
+      name: zen-service-broker-secret
+    - mountPath: /var/run/certs
+      name: internal-tls
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  imagePullSecrets:
+  - name: ibm-entitlement-key
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  serviceAccount: zen-norbac-sa
+  serviceAccountName: zen-norbac-sa
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoSchedule
+    key: node.kubernetes.io/memory-pressure
+    operator: Exists
+    volumes:
+  - name: op-platform-secret
+    secret:
+      defaultMode: 420
+      items:
+      - key: opsystem-pw
+        path: opsystem-pw
+      - key: encryption-key-pw
+        path: encryption-key-pw
+      secretName: openpages-{{ target_instance_id.openpage_name }}-platform-secret
+  - name: op-db-secret
+    secret:
+      defaultMode: 420
+      items:
+      - key: openpage-pw
+        path: openpage-pw
+      - key: db2inst1-pw
+        path: db2inst1-pw
+      secretName: openpages-{{ target_instance_id.openpage_name }}-db-secret
+  - name: op-initialpw-secret
+    secret:
+      defaultMode: 420
+      secretName: openpages-{{ target_instance_id.openpage_name }}-initialpw-secret
+  - name: zen-service-broker-secret
+    secret:
+      defaultMode: 420
+      secretName: zen-service-broker-secret
+  - name: internal-tls
+    secret:
+      defaultMode: 420
+      items:
+      - key: ca.crt
+        path: certificate.pem
+      - key: tls.crt
+        path: tls.crt
+      - key: tls.key
+        path: tls.key
+      secretName: internal-tls

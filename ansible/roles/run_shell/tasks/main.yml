@@ -1,0 +1,14 @@
+---
+# tasks file for run_shell
+- name: Run shell command
+  shell: "{{ command }}"
+  args:
+    executable: "{{ exec_shell }}"
+    chdir: "{{ work_dir }}"
+  become: "{{ become }}"
+  become_user: "{{ target_user }}"
+  become_flags: "{{ become_flags }}"
+  register: run_shell_result
+  failed_when: >
+    (p_failed_when is defined and run_shell_result == p_failed_when) or
+    (p_failed_when is not defined and run_shell_result.rc != 0)

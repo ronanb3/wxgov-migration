@@ -1,0 +1,15 @@
+---
+# tasks file for wait_shell
+- name: wait for shell command to get one line as a result
+  shell: "{{ command }}"
+  args:
+    executable: "{{ exec_shell }}"
+    chdir: "{{ work_dir }}"
+  become: "{{ become }}"
+  become_user: "{{ target_user }}"
+  become_flags: "{{ become_flags }}"
+  register: wait_shell_result
+  failed_when: wait_shell_result.stdout == "0"
+  retries: 10
+  delay: 60
+  until: wait_shell_result.stdout == "1"

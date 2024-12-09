@@ -1,0 +1,15 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/ibm-cpd-openpages-operator.cpd-operators: ""
+  name: ibm-cpd-openpages-operator
+  namespace: {{ target_ocp.operators_project }}
+spec:
+  channel: v7.2
+  installPlanApproval: Automatic
+  name: ibm-cpd-openpages-operator
+  source: ibm-cpd-openpages-operator-catalog
+  sourceNamespace: {{ target_ocp.operators_project }}
+  startingCSV: ibm-cpd-openpages-operator.v7.2.0
+  

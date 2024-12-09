@@ -1,0 +1,6 @@
+---
+exec_shell: "/usr/bin/zsh"
+become_flags: "--login"
+become_user: "ronan"
+become: "yes"
+v_failed_when: omit

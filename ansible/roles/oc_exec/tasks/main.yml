@@ -1,0 +1,16 @@
+---
+# tasks file for run_shell
+- name: Run shell command in a pod
+  vars:
+    shell_command: "oc exec -i {{ pod }} -- /bin/bash -c '{{ pod_command }}'"
+  shell: "{{ shell_command }}"
+  args:
+    executable: "{{ exec_shell }}"
+    chdir: "{{ work_dir }}"
+  become: "{{ become }}"
+  become_user: "{{ target_user }}"
+  become_flags: "{{ become_flags }}"
+  register: oc_exec_result
+  failed_when: >
+    (p_failed_when is defined and oc_exec_result == p_failed_when) or
+    (p_failed_when is not defined and oc_exec_result.rc != 0)
