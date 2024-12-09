@@ -1,0 +1,11 @@
+Script to migrate Watsonx Governance from version 4.8.3 to 5.0.3
+They can be improved to managed any kind of version
+
+They migrate data and configuration from version 4.8.3 to an empty 5.0.3 version.
+It avoids the step to install a version 4.8.3 to the target server, restore the soruce data and upgrade it.
+
+Prereqs
+- zsh
+- yq
+- skopeo
+- oc
