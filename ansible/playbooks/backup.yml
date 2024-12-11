@@ -8,7 +8,7 @@
   tasks:
 
   - name: Set global variables
-    include_vars: "./global-vars.yml"
+    include_vars: "../global-vars.yaml"
 
   - name: set variables
     set_fact:
@@ -22,13 +22,21 @@
       instance_id: "{{ source_instance_id.instance_id }}"
       openpage_name: "{{ source_instance_id.openpage_name }}"
 
-  # - name: Set user name
-  #   set_fact:
-  #     target_user: "{{ upgrade.target_user }}"
+  - name: Set user name
+    set_fact:
+      target_user: "{{ upgrade.target_user }}"
     
-  # - name: Set working directory
-  #   set_fact:
-  #     work_dir: "{{ upgrade.work_dir }}"
+  - name: Set working directory
+    set_fact:
+      work_dir: "{{ upgrade.work_dir }}"
+
+  - name: create working directory with owner
+    ansible.builtin.file:
+      path: "{{ work_dir }}"
+      state: directory
+      mode: 755
+      owner: "{{ target_user }}"
+      group: "{{ target_user }}"
     
   # - name: Load global_config from yaml files in {{ work_dir }}
   #   include_vars:
@@ -71,11 +79,6 @@
   #     var: run_shell_result
   #   tags: debug_info
 
-  - name: create working directory
-    ansible.builtin.file:
-      path: "{{ work_dir }}"
-      state: directory
-
   - name: Get Secrets names
     include_role:
       name: oc_exec
@@ -94,50 +97,50 @@
       var: secrets
     tags: debug_info
 
-  # - name: remove all *.sec files
-  #   include_role:
-  #     name: oc_exec
-  #   vars:
-  #     pod_command: |
-  #       source ~/.bashrc
-  #       cd
-  #       rm *.sec
-  #     pod: "c-db2oltp-{{instance_id}}-db2u-0"
+  - name: remove all *.sec files
+    include_role:
+      name: oc_exec
+    vars:
+      pod_command: |
+        source ~/.bashrc
+        cd
+        rm *.sec
+      pod: "c-db2oltp-{{instance_id}}-db2u-0"
     
-  # - name: extract secrets
-  #   include_role:
-  #     name: oc_exec
-  #   vars:
-  #     pod_command: |
-  #       source ~/.bashrc
-  #       cd
-  #       gsk8capicmd_64 -secretkey -extract -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed -target {{item}}.sec -format pkcs12 -label {{item}}
-  #     pod : "c-db2oltp-{{instance_id}}-db2u-0"
-  #   loop: "{{ secrets }}"
+  - name: extract secrets
+    include_role:
+      name: oc_exec
+    vars:
+      pod_command: |
+        source ~/.bashrc
+        cd
+        gsk8capicmd_64 -secretkey -extract -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed -target {{item}}.sec -format pkcs12 -label {{item}}
+      pod : "c-db2oltp-{{instance_id}}-db2u-0"
+    loop: "{{ secrets }}"
 
-  # - name: Copy secrets locally
-  #   include_role:
-  #     name: run_shell
-  #   vars:
-  #     command: |
-  #       oc cp c-db2oltp-{{instance_id}}-db2u-0:/mnt/blumeta0/home/db2inst1/{{item}}.sec {{item}}.sec
-  #   loop: "{{ secrets }}"
+  - name: Copy secrets locally
+    include_role:
+      name: run_shell
+    vars:
+      command: |
+        oc cp c-db2oltp-{{instance_id}}-db2u-0:/mnt/blumeta0/home/db2inst1/{{item}}.sec {{item}}.sec
+    loop: "{{ secrets }}"
 
-  # - name: Backup Database OPX in pod
-  #   include_role:
-  #     name: oc_exec
-  #   vars:
-  #     pod_command: |
-  #       source ~/.bashrc
-  #       db2 connect to ${DBNAME}
-  #       BACKUPDIR="/mnt/backup/online/"
-  #       cp ${KEYSTORELOC}/keystore.p12 $BACKUPDIR
-  #       cp ${KEYSTORELOC}/keystore.sth $BACKUPDIR
-  #       cd $BACKUPDIR
-  #       # remove all previous backups
-  #       rm OPX*
-  #       db2 backup db ${DBNAME} on all dbpartitionnums online to $BACKUPDIR include logs without prompting
-  #     pod: "c-db2oltp-{{instance_id}}-db2u-0"
+  - name: Backup Database OPX in pod
+    include_role:
+      name: oc_exec
+    vars:
+      pod_command: |
+        source ~/.bashrc
+        db2 connect to ${DBNAME}
+        BACKUPDIR="/mnt/backup/online/"
+        cp ${KEYSTORELOC}/keystore.p12 $BACKUPDIR
+        cp ${KEYSTORELOC}/keystore.sth $BACKUPDIR
+        cd $BACKUPDIR
+        # remove all previous backups
+        rm OPX*
+        db2 backup db ${DBNAME} on all dbpartitionnums online to $BACKUPDIR include logs without prompting
+      pod: "c-db2oltp-{{instance_id}}-db2u-0"
 
   - name: Get latest backup file name
     include_role:
@@ -166,12 +169,12 @@
         oc rsync c-db2oltp-{{instance_id}}-db2u-0:/mnt/backup/online//keystore.p12 . --progress=true
         oc rsync c-db2oltp-{{instance_id}}-db2u-0:/mnt/backup/online//keystore.sth . --progress=true
 
-  # - name: Copy DB backup locally - It can take a while, many hours !
-  #   include_role:
-  #     name: run_shell
-  #   vars:
-  #     command: |
-  #       oc rsync c-db2oltp-{{instance_id}}-db2u-0:/mnt/backup/online/{{backup_name}} . --progress=true
+  - name: Copy DB backup locally - It can take a while, many hours !
+    include_role:
+      name: run_shell
+    vars:
+      command: |
+        oc rsync c-db2oltp-{{instance_id}}-db2u-0:/mnt/backup/online/{{backup_name}} . --progress=true
 
   - name : Scale Application to 1
     include_role:
@@ -187,16 +190,16 @@
       command: |
         oc get sts/openpages-{{ openpage_name }}-sts | grep 1/1 | wc -l
 
-  # - name: Backup Application Storage
-  #   include_role:
-  #     name: oc_exec
-  #   vars:
-  #     pod_command: |
-  #       mkdir -p /openpages-shared/temp
-  #       cd /opt/ibm/OpenPages/aurora/bin
-  #       ./OPBackup.sh /openpages-shared/temp nosrvrst
-  #       ls -alt /openpages-shared/temp
-  #     pod: "openpages-{{openpage_name}}-sts-0"
+  - name: Backup Application Storage
+    include_role:
+      name: oc_exec
+    vars:
+      pod_command: |
+        mkdir -p /openpages-shared/temp
+        cd /opt/ibm/OpenPages/aurora/bin
+        ./OPBackup.sh /openpages-shared/temp nosrvrst
+        ls -alt /openpages-shared/temp
+      pod: "openpages-{{openpage_name}}-sts-0"
 
   - name: Get storage name
     include_role:
@@ -216,22 +219,22 @@
       var: storage_file
     tags: debug_info
 
-  # - name: Copy {{storage_file}} from the pod locally
-  #   include_role:
-  #     name: run_shell
-  #   vars:
-  #     command: |
-  #       oc rsync openpages-{{openpage_name}}-sts-0:/openpages-shared/temp/{{storage_file}} . --progress=true
+  - name: Copy {{storage_file}} from the pod locally
+    include_role:
+      name: run_shell
+    vars:
+      command: |
+        oc rsync openpages-{{openpage_name}}-sts-0:/openpages-shared/temp/{{storage_file}} . --progress=true
 
-  # - name: Backup Application Configuration
-  #   include_role:
-  #     name: oc_exec
-  #   vars:
-  #     pod_command: |
-  #       cd /opt/ibm/OpenPages/aurora/bin
-  #       ./OPBackup.sh /openpages-shared/openpages-backup-restore app-cp4d nosrvrst
-  #       ls -alt /openpages-shared/openpages-backup-restore
-  #     pod: "openpages-{{openpage_name}}-sts-0"
+  - name: Backup Application Configuration
+    include_role:
+      name: oc_exec
+    vars:
+      pod_command: |
+        cd /opt/ibm/OpenPages/aurora/bin
+        ./OPBackup.sh /openpages-shared/openpages-backup-restore app-cp4d nosrvrst
+        ls -alt /openpages-shared/openpages-backup-restore
+      pod: "openpages-{{openpage_name}}-sts-0"
 
   - name: Get configuration name
     include_role:
@@ -251,12 +254,12 @@
       var: configuration_file
     tags: debug_info
 
-  # - name: Copy {{configuration_file}} from the pod locally
-  #   include_role:
-  #     name: run_shell
-  #   vars:
-  #     command: |
-  #       oc rsync openpages-{{openpage_name}}-sts-0:/openpages-shared/openpages-backup-restore/{{configuration_file}} . --progress=true
+  - name: Copy {{configuration_file}} from the pod locally
+    include_role:
+      name: run_shell
+    vars:
+      command: |
+        oc rsync openpages-{{openpage_name}}-sts-0:/openpages-shared/openpages-backup-restore/{{configuration_file}} . --progress=true
 
   - name: Get encryption_key_pw
     include_role:
