@@ -1,9 +1,9 @@
 ---
-# tasks file for run_shell
+# tasks file for oc_exec
 - name: Run shell command in a pod
   vars:
-    shell_command: "oc exec -i {{ pod }} -- /bin/bash -c '{{ pod_command }}'"
-  shell: "{{ shell_command }}"
+    shell_command: "oc exec -i {{ oc_exec_pod }} -- /bin/bash -c '{{ oc_exec_pod_command }}'"
+  ansible.builtin.shell: "{{ shell_command }}"
   args:
     executable: "{{ exec_shell }}"
     chdir: "{{ work_dir }}"

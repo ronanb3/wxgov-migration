@@ -1,7 +1,7 @@
 ---
 # tasks file for wait_shell
-- name: wait for shell command to get one line as a result
-  shell: "{{ command }}"
+- name: Wait for shell command to get one line as a result
+  ansible.builtin.shell: "{{ wait_shell_command }}"
   args:
     executable: "{{ exec_shell }}"
     chdir: "{{ work_dir }}"
