@@ -193,7 +193,7 @@
         name: wait_shell
       vars:
         wait_shell_command: |
-          oc get pods | grep openpages-openpagesinstance-cr-sts | grep 1/2 | wc -l
+          oc get pods | grep openpages-{{ openpage_name }}-sts | grep 1/2 | wc -l
       # the pod is not fully restarting, it will be fine at the end
 
     - name: Pause for 5 minutes to build app
