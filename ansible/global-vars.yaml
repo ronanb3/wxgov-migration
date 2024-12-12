@@ -2,24 +2,20 @@
 upgrade:
   work_dir: "/home/ronan/CM/wxgov-migration/work_tmp"
   target_user: "ronan"
-source_ocp:
+source:
   ocp_url: "https://api.670e543742e233326365a7f5.ocp.techzone.ibm.com:6443"
   ocp_user: "kubeadmin"
   ocp_pwd: "Qq5rR-pipyq-bE9je-EfpBy"
   ocp_project: "wxgov"
   operators_project: "wxgov-operators"
-target_ocp:
+  openpage_name: "openpagesinstance-cr"
+target:
   ocp_url: "https://api.670e54de9c48c677246af89e.ocp.techzone.ibm.com:6443"
   ocp_user: "kubeadmin"
   ocp_pwd: "qsL7w-nLRzs-tXLjZ-dBg6z"
   ocp_project: "cpd"
   operators_project: "cpd-operators"
+  openpage_name: "rbo-openpages-1"
 openpage_users:
   op_user: "OpenPagesAdministrator"
   cp4d_user: "cp4dadmin"
-source_instance_id:
-  instance_id: 1729685232620366
-  openpage_name: "openpagesinstance-cr"
-target_instance_id:
-  instance_id: 1733396368752009
-  openpage_name: "rbo-openpages-1"

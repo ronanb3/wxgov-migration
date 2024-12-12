@@ -26,12 +26,12 @@
       ansible.builtin.set_fact:
         target_user: "{{ upgrade.target_user }}"
         work_dir: "{{ upgrade.work_dir }}"
-        ocp_url: "{{ target_ocp.ocp_url }}"
-        ocp_user: "{{ target_ocp.ocp_user }}"
-        ocp_pwd: "{{ target_ocp.ocp_pwd }}"
-        ocp_project: "{{ target_ocp.ocp_project }}"
-        operators_project: "{{ target_ocp.operators_project }}"
-        openpage_name: "{{ target_instance_id.openpage_name }}"
+        ocp_url: "{{ target.ocp_url }}"
+        ocp_user: "{{ target.ocp_user }}"
+        ocp_pwd: "{{ target.ocp_pwd }}"
+        ocp_project: "{{ target.ocp_project }}"
+        operators_project: "{{ target.operators_project }}"
+        openpage_name: "{{ target.openpage_name }}"
 
     - name: Set user name
       ansible.builtin.set_fact:
