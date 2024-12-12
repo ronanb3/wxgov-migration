@@ -7,334 +7,334 @@
 
   tasks:
 
-  - name: Set global variables
-    ansible.builtin.include_vars: "../global-vars.yaml"
+    - name: Set global variables
+      ansible.builtin.include_vars: "../global-vars.yaml"
 
-  - name: Set variables
-    ansible.builtin.set_fact:
-      target_user: "{{ upgrade.target_user }}"
-      work_dir: "{{ upgrade.work_dir }}"
-      ocp_url: "{{ source_ocp.ocp_url }}"
-      ocp_user: "{{ source_ocp.ocp_user }}"
-      ocp_pwd: "{{ source_ocp.ocp_pwd }}"
-      ocp_project: "{{ source_ocp.ocp_project }}"
-      operators_project: "{{ source_ocp.operators_project }}"
-      instance_id: "{{ source_instance_id.instance_id }}"
-      openpage_name: "{{ source_instance_id.openpage_name }}"
+    - name: Set variables
+      ansible.builtin.set_fact:
+        target_user: "{{ upgrade.target_user }}"
+        work_dir: "{{ upgrade.work_dir }}"
+        ocp_url: "{{ source_ocp.ocp_url }}"
+        ocp_user: "{{ source_ocp.ocp_user }}"
+        ocp_pwd: "{{ source_ocp.ocp_pwd }}"
+        ocp_project: "{{ source_ocp.ocp_project }}"
+        operators_project: "{{ source_ocp.operators_project }}"
+        instance_id: "{{ source_instance_id.instance_id }}"
+        openpage_name: "{{ source_instance_id.openpage_name }}"
 
-  - name: Set user name
-    ansible.builtin.set_fact:
-      target_user: "{{ upgrade.target_user }}"
+    - name: Set user name
+      ansible.builtin.set_fact:
+        target_user: "{{ upgrade.target_user }}"
 
-  - name: Set working directory
-    ansible.builtin.set_fact:
-      work_dir: "{{ upgrade.work_dir }}"
+    - name: Set working directory
+      ansible.builtin.set_fact:
+        work_dir: "{{ upgrade.work_dir }}"
 
-  - name: Create working directory with owner
-    ansible.builtin.file:
-      path: "{{ work_dir }}"
-      state: directory
-      mode: 755
-      owner: "{{ target_user }}"
-      group: "{{ target_user }}"
+    - name: Create working directory with owner
+      ansible.builtin.file:
+        path: "{{ work_dir }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
 
-  # - name: Load global_config from yaml files in {{ work_dir }}
-  #   ansible.builtin.include_vars:
-  #     dir: "{{ work_dir }}"
-  #     files_matching: '.*\.yaml$'
-  #     depth: 1
+    # - name: Load global_config from yaml files in {{ work_dir }}
+    #   ansible.builtin.include_vars:
+    #     dir: "{{ work_dir }}"
+    #     files_matching: '.*\.yaml$'
+    #     depth: 1
 
-  # - name: Display all variables/facts known for a host
-  #   ansible.builtin.debug:
-  #     var: hostvars[inventory_hostname]
-  #   tags: debug_info
+    # - name: Display all variables/facts known for a host
+    #   ansible.builtin.debug:
+    #     var: hostvars[inventory_hostname]
+    #   tags: debug_info
 
-  - name: Test display
-    ansible.builtin.debug:
-      var: work_dir
-    tags: debug_info
+    - name: Test display
+      ansible.builtin.debug:
+        var: work_dir
+      tags: debug_info
 
-  - name: Login to OCP
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        source ~/.zshrc
-        oc login -u {{ ocp_user }} -p {{ ocp_pwd }} --server={{ ocp_url }}
+    - name: Login to OCP
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          source ~/.zshrc
+          oc login -u {{ ocp_user }} -p {{ ocp_pwd }} --server={{ ocp_url }}
 
-  # - name: ansible.builtin.debug Login
-  #   ansible.builtin.debug:
-  #     var: run_shell_result
-  #   tags: debug_info
+    # - name: ansible.builtin.debug Login
+    #   ansible.builtin.debug:
+    #     var: run_shell_result
+    #   tags: debug_info
 
-  - name: Set project
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc project {{ ocp_project }}
-  
-  # - name: Debug set project
-  #   ansible.builtin.debug:
-  #     var: run_shell_result
-  #   tags: debug_info
+    - name: Set project
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc project {{ ocp_project }}
 
-  - name: Get Secrets names
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        source ~/.bashrc
-        gsk8capicmd_64 -cert -list -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed' 2> /dev/null | awk '/DB2/ {print $2}
-      oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
+    # - name: Debug set project
+    #   ansible.builtin.debug:
+    #     var: run_shell_result
+    #   tags: debug_info
 
-  - name: Set secret variable
-    ansible.builtin.set_fact:
-      secrets: "{{ oc_exec_result.stdout_lines }}" 
+    - name: Get Secrets names
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          source ~/.bashrc
+          gsk8capicmd_64 -cert -list -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed' 2> /dev/null | awk '/DB2/ {print $2}
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
 
-  - name: Debug secret variable
-    ansible.builtin.debug:
-      var: secrets
-    tags: debug_info
+    - name: Set secret variable
+      ansible.builtin.set_fact:
+        secrets: "{{ oc_exec_result.stdout_lines }}"
 
-  - name: remove all *.sec files
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        source ~/.bashrc
-        cd
-        rm *.sec
-      oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
-    
-  - name: extract secrets
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        source ~/.bashrc
-        cd
-        gsk8capicmd_64 -secretkey -extract -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed -target {{ item }}.sec -format pkcs12 -label {{ item }}
-      oc_exec_pod : "c-db2oltp-{{ instance_id }}-db2u-0"
-    loop: "{{ secrets }}"
+    - name: Debug secret variable
+      ansible.builtin.debug:
+        var: secrets
+      tags: debug_info
 
-  - name: Copy secrets locally
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc cp c-db2oltp-{{ instance_id }}-db2u-0:/mnt/blumeta0/home/db2inst1/{{ item }}.sec {{ item }}.sec
-    loop: "{{ secrets }}"
+    - name: Remove all *.sec files
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          source ~/.bashrc
+          cd
+          rm *.sec
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
 
-  - name: Backup Database OPX in pod
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        source ~/.bashrc
-        db2 connect to ${DBNAME}
-        BACKUPDIR="/mnt/backup/online/"
-        cp ${KEYSTORELOC}/keystore.p12 $BACKUPDIR
-        cp ${KEYSTORELOC}/keystore.sth $BACKUPDIR
-        cd $BACKUPDIR
-        # remove all previous backups
-        rm OPX*
-        db2 backup db ${DBNAME} on all dbpartitionnums online to $BACKUPDIR include logs without prompting
-      oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
+    - name: Extract secrets
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          source ~/.bashrc
+          cd
+          gsk8capicmd_64 -secretkey -extract -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed -target {{ item }}.sec -format pkcs12 -label {{ item }}
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
+      loop: "{{ secrets }}"
 
-  - name: Get latest backup file name
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        source ~/.bashrc
-        cd /mnt/backup/online/
-        ls -lt OPX* | head -n 1 | awk "{print \$9}"
-      oc_exec_pod: "c-db2oltp-{{instance_id}}-db2u-0"
-  
-  - name: Set backup variable
-    ansible.builtin.set_fact:
-      backup_name: "{{ oc_exec_result.stdout }}"
+    - name: Copy secrets locally
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc cp c-db2oltp-{{ instance_id }}-db2u-0:/mnt/blumeta0/home/db2inst1/{{ item }}.sec {{ item }}.sec
+      loop: "{{ secrets }}"
 
-  - name: Debug backup variable
-    ansible.builtin.debug:
-      var: backup_name
-    tags: debug_info
+    - name: Backup Database OPX in pod
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          source ~/.bashrc
+          db2 connect to ${DBNAME}
+          BACKUPDIR="/mnt/backup/online/"
+          cp ${KEYSTORELOC}/keystore.p12 $BACKUPDIR
+          cp ${KEYSTORELOC}/keystore.sth $BACKUPDIR
+          cd $BACKUPDIR
+          # remove all previous backups
+          rm OPX*
+          db2 backup db ${DBNAME} on all dbpartitionnums online to $BACKUPDIR include logs without prompting
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
 
-  - name: Copy keys locally
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc rsync c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online//keystore.p12 . --progress=true
-        oc rsync c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online//keystore.sth . --progress=true
+    - name: Get latest backup file name
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          source ~/.bashrc
+          cd /mnt/backup/online/
+          ls -lt OPX* | head -n 1 | awk "{print \$9}"
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
 
-  - name: Copy DB backup locally - It can take a while, many hours !
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc rsync c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online/{{ backup_name }} . --progress=true
+    - name: Set backup variable
+      ansible.builtin.set_fact:
+        backup_name: "{{ oc_exec_result.stdout }}"
 
-  - name : Scale Application to 1
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc scale --replicas=1 sts/openpages-{{ openpage_name }}-sts
-  
-  - name: Wait for Application to scale
-    ansible.builtin.include_role:
-      name: wait_shell
-    vars:
-      wait_shell_command: |
-        oc get sts/openpages-{{ openpage_name }}-sts | grep 1/1 | wc -l
+    - name: Debug backup variable
+      ansible.builtin.debug:
+        var: backup_name
+      tags: debug_info
 
-  - name: Backup Application Storage
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        mkdir -p /openpages-shared/temp
-        cd /opt/ibm/OpenPages/aurora/bin
-        ./OPBackup.sh /openpages-shared/temp nosrvrst
-        ls -alt /openpages-shared/temp
-      oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
+    - name: Copy keys locally
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc rsync c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online//keystore.p12 . --progress=true
+          oc rsync c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online//keystore.sth . --progress=true
 
-  - name: Get storage name
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        cd /openpages-shared/temp
-        ls -lt *.zip | head -n 1 | awk "{print \$9}"
-      oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
+    - name: Copy DB backup locally - It can take a while, many hours !
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc rsync c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online/{{ backup_name }} . --progress=true
 
-  - name: Set storage variable
-    ansible.builtin.set_fact:
-      storage_file: "{{ oc_exec_result.stdout }}"
+    - name: Scale Application to 1
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc scale --replicas=1 sts/openpages-{{ openpage_name }}-sts
 
-  - name: Debug storage variable
-    ansible.builtin.debug:
-      var: storage_file
-    tags: debug_info
+    - name: Wait for Application to scale
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+          oc get sts/openpages-{{ openpage_name }}-sts | grep 1/1 | wc -l
 
-  - name: Copy file from the pod locally : {{ storage_file }}
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc rsync openpages-{{ openpage_name }}-sts-0:/openpages-shared/temp/{{ storage_file }} . --progress=true
+    - name: Backup Application Storage
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          mkdir -p /openpages-shared/temp
+          cd /opt/ibm/OpenPages/aurora/bin
+          ./OPBackup.sh /openpages-shared/temp nosrvrst
+          ls -alt /openpages-shared/temp
+        oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
 
-  - name: Backup Application Configuration
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        cd /opt/ibm/OpenPages/aurora/bin
-        ./OPBackup.sh /openpages-shared/openpages-backup-restore app-cp4d nosrvrst
-        ls -alt /openpages-shared/openpages-backup-restore
-      oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
+    - name: Get storage name
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          cd /openpages-shared/temp
+          ls -lt *.zip | head -n 1 | awk "{print \$9}"
+        oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
 
-  - name: Get configuration name
-    ansible.builtin.include_role:
-      name: oc_exec
-    vars:
-      oc_exec_pod_command: |
-        cd /openpages-shared/openpages-backup-restore
-        ls -lt *.zip | head -n 1 | awk "{print \$9}"
-      oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
+    - name: Set storage variable
+      ansible.builtin.set_fact:
+        storage_file: "{{ oc_exec_result.stdout }}"
 
-  - name: Set configuration variable
-    ansible.builtin.set_fact:
-      configuration_file: "{{ oc_exec_result.stdout }}"
+    - name: Debug storage variable
+      ansible.builtin.debug:
+        var: storage_file
+      tags: debug_info
 
-  - name: Debug configuration variable
-    ansible.builtin.debug:
-      var: configuration_file
-    tags: debug_info
+    - name: Copy file from the pod locally {{ storage_file }}
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc rsync openpages-{{ openpage_name }}-sts-0:/openpages-shared/temp/{{ storage_file }} . --progress=true
 
-  - name: Copy {{ configuration_file }} from the pod locally
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc rsync openpages-{{ openpage_name }}-sts-0:/openpages-shared/openpages-backup-restore/{{ configuration_file }} . --progress=true
+    - name: Backup Application Configuration
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          cd /opt/ibm/OpenPages/aurora/bin
+          ./OPBackup.sh /openpages-shared/openpages-backup-restore app-cp4d nosrvrst
+          ls -alt /openpages-shared/openpages-backup-restore
+        oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
 
-  - name: Get encryption_key_pw
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc get secret openpages-{{ openpage_name }}-platform-secret -o jsonpath="{.data.encryption-key-pw}"
+    - name: Get configuration name
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          cd /openpages-shared/openpages-backup-restore
+          ls -lt *.zip | head -n 1 | awk "{print \$9}"
+        oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
 
-  - name: Set encryption_key_pw variable
-    ansible.builtin.set_fact:
-      encryption_key_pw: "{{ run_shell_result.stdout }}"
+    - name: Set configuration variable
+      ansible.builtin.set_fact:
+        configuration_file: "{{ oc_exec_result.stdout }}"
 
-  - name: Debug configuration variable
-    ansible.builtin.debug:
-      var: encryption_key_pw
-    tags: debug_info
+    - name: Debug configuration variable
+      ansible.builtin.debug:
+        var: configuration_file
+      tags: debug_info
 
-  - name: Get opsystem_pw
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc get secret openpages-{{ openpage_name }}-platform-secret -o jsonpath="{.data.opsystem-pw}"
+    - name: Copy file from the pod locally {{ configuration_file }}
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc rsync openpages-{{ openpage_name }}-sts-0:/openpages-shared/openpages-backup-restore/{{ configuration_file }} . --progress=true
 
-  - name: Set opsystem_pw variable
-    ansible.builtin.set_fact:
-      opsystem_pw: "{{ run_shell_result.stdout }}"
+    - name: Get encryption_key_pw
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc get secret openpages-{{ openpage_name }}-platform-secret -o jsonpath="{.data.encryption-key-pw}"
 
-  - name: Debug configuration variable
-    ansible.builtin.debug:
-      var: opsystem_pw
-    tags: debug_info
+    - name: Set encryption_key_pw variable
+      ansible.builtin.set_fact:
+        encryption_key_pw: "{{ run_shell_result.stdout }}"
 
-  - name: Get keystore_pw
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc get secret openpages-{{ openpage_name }}-platform-secret -o jsonpath="{.data.keystore-pw}"
+    - name: Debug configuration variable
+      ansible.builtin.debug:
+        var: encryption_key_pw
+      tags: debug_info
 
-  - name: Set keystore_pw variable
-    ansible.builtin.set_fact:
-      keystore_pw: "{{ run_shell_result.stdout }}"
+    - name: Get opsystem_pw
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc get secret openpages-{{ openpage_name }}-platform-secret -o jsonpath="{.data.opsystem-pw}"
 
-  - name: Debug configuration variable
-    ansible.builtin.debug:
-      var: keystore_pw
-    tags: debug_info
+    - name: Set opsystem_pw variable
+      ansible.builtin.set_fact:
+        opsystem_pw: "{{ run_shell_result.stdout }}"
 
-  - name: Get op_user_pwd
-    ansible.builtin.include_role:
-      name: run_shell
-    vars:
-      run_shell_command: |
-        oc get secret openpages-{{ openpage_name }}-initialpw-secret -o jsonpath="{.data.OpenPagesAdministrator}"
+    - name: Debug configuration variable
+      ansible.builtin.debug:
+        var: opsystem_pw
+      tags: debug_info
 
-  - name: Set op_user_pwd variable
-    ansible.builtin.set_fact:
-      op_user_pwd: "{{ run_shell_result.stdout }}"
+    - name: Get keystore_pw
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc get secret openpages-{{ openpage_name }}-platform-secret -o jsonpath="{.data.keystore-pw}"
 
-  - name: Debug configuration variable
-    ansible.builtin.debug:
-      var: op_user_pwd
-    tags: debug_info
+    - name: Set keystore_pw variable
+      ansible.builtin.set_fact:
+        keystore_pw: "{{ run_shell_result.stdout }}"
 
-  - name: Create backup param file
-    template:
-       src: backup_vars.j2
-       dest: "{{ work_dir }}/backup_vars.yaml"
-       mode: 0755
+    - name: Debug configuration variable
+      ansible.builtin.debug:
+        var: keystore_pw
+      tags: debug_info
 
-  - name: Print next steps
-    ansible.builtin.debug:
-      msg:
-        - "==== Backup Done ===="
-        - "Transfer the {{ work_dir }} to the target bastion server"
-        - "Run the restore.yaml playbook"
-    tags: debug_info
+    - name: Get op_user_pwd
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc get secret openpages-{{ openpage_name }}-initialpw-secret -o jsonpath="{.data.OpenPagesAdministrator}"
+
+    - name: Set op_user_pwd variable
+      ansible.builtin.set_fact:
+        op_user_pwd: "{{ run_shell_result.stdout }}"
+
+    - name: Debug configuration variable
+      ansible.builtin.debug:
+        var: op_user_pwd
+      tags: debug_info
+
+    - name: Create backup param file
+      ansible.builtin.template:
+        src: backup_vars.j2
+        dest: "{{ work_dir }}/backup_vars.yaml"
+        mode: "0755"
+
+    - name: Print next steps
+      ansible.builtin.debug:
+        msg:
+          - "==== Backup Done ===="
+          - "Transfer the {{ work_dir }} to the target bastion server"
+          - "Run the restore.yaml playbook"
+      tags: debug_info
