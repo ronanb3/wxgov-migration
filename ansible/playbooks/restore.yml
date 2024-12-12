@@ -31,7 +31,6 @@
         ocp_pwd: "{{ target_ocp.ocp_pwd }}"
         ocp_project: "{{ target_ocp.ocp_project }}"
         operators_project: "{{ target_ocp.operators_project }}"
-        instance_id: "{{ target_instance_id.instance_id }}"
         openpage_name: "{{ target_instance_id.openpage_name }}"
 
     - name: Set user name
@@ -48,36 +47,15 @@
         files_matching: '.*\.yaml$'
         depth: 1
 
-    # - name: Test display
-    #   ansible.builtin.debug:
-    #     var: instance_id
-    #   tags: debug_info
-
-    - name: Set variables from config file
+    - name: Set backup variables from backup file
       ansible.builtin.set_fact:
         "{{item}}": "{{ hostvars[inventory_hostname]['backup_params'][item] }}"
       loop: "{{ v_backup_params }}"
 
-    - name: Set variables from config file
+    - name: Set keys variables from backup file
       ansible.builtin.set_fact:
         "{{item}}": "{{ hostvars[inventory_hostname]['keys'][item] }}"
       loop: "{{ v_keys }}"
-
-    # - name: Display all variables/facts known for a host
-    #   ansible.builtin.debug:
-    #     var: vars
-    #   tags: debug_info
-
-    # - name: Test display
-    #   ansible.builtin.debug:
-    #     msg: "{{ item }}: {{ vars[item] }}"
-    #   with_items: "{{ v_keys }}"
-    #   tags: debug_info
-
-    # - name: Test display
-    #   ansible.builtin.debug:
-    #     var: work_dir
-    #   tags: debug_info
 
     - name: Login to OCP
       ansible.builtin.include_role:
@@ -87,11 +65,6 @@
           source ~/.zshrc
           oc login -u {{ ocp_user }} -p {{ ocp_pwd }} --server={{ ocp_url }}
 
-    # - name: Debug Login
-    #   ansible.builtin.debug:
-    #     var: run_shell_result
-    #   tags: debug_info
-
     - name: Set project
       ansible.builtin.include_role:
         name: run_shell
@@ -99,180 +72,186 @@
         run_shell_command: |
           oc project {{ ocp_project }}
 
-    # - name: Debug set project
-    #   ansible.builtin.debug:
-    #     var: run_shell_result
-    #   tags: debug_info
+    - name: Debug set project
+      ansible.builtin.debug:
+        var: run_shell_result
+      tags: debug_info
 
-    # - name: Copy secrets to DB pod
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc cp {{item}}.sec c-db2oltp-{{instance_id}}-db2u-0:/mnt/backup/online
-    #   loop: "{{ secrets }}"
+    - name: Get Instance Id
+      ansible.builtin.include_role:
+        name: get_instance_id
+      vars:
+        get_instance_id_openpage_name: "{{ openpage_name }}"
 
-    # - name: Import secrets
-    #   ansible.builtin.include_role:
-    #     name: oc_exec
-    #   vars:
-    #     oc_exec_pod_command: |
-    #       source ~/.bashrc
-    #       cd /mnt/backup/online/
-    #       gsk8capicmd_64 -secretkey -add -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed -label {{item}} -format pkcs12 -file {{item}}.sec
-    #     oc_exec_pod : "c-db2oltp-{{instance_id}}-db2u-0"
-    #   loop: "{{ secrets }}"
+    - name: Copy secrets to DB pod
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc cp {{ item }}.sec c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online
+      loop: "{{ secrets }}"
 
-    # - name: Restart Application Pod
-    #   ansible.builtin.debug:
-    #     msg: ""
+    - name: Import secrets
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          source ~/.bashrc
+          cd /mnt/backup/online/
+          gsk8capicmd_64 -secretkey -add -db /mnt/blumeta0/db2/keystore/keystore.p12 -stashed -label {{ item }} -format pkcs12 -file {{ item }}.sec
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
+      loop: "{{ secrets }}"
 
-    # - name: Scale Application to 0
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
+    - name: Restart Application Pod
+      ansible.builtin.debug:
+        msg: ""
 
-    # - name: Wait for Application to scale
-    #   ansible.builtin.include_role:
-    #     name: wait_shell
-    #   vars:
-    #     wait_shell_command: |
-    #       oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
+    - name: Scale Application to 0
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
 
-    # - name: Scale Application to 1
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc scale --replicas=1 sts/openpages-{{ openpage_name }}-sts
+    - name: Wait for Application to scale
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+          oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
 
-    # - name: Wait for Application to scale
-    #   ansible.builtin.include_role:
-    #     name: wait_shell
-    #   vars:
-    #     wait_shell_command: |
-    #       oc get sts/openpages-{{ openpage_name }}-sts | grep 1/1 | wc -l
+    - name: Scale Application to 1
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc scale --replicas=1 sts/openpages-{{ openpage_name }}-sts
 
-    # - name: Copy Storage to App pod
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc cp {{storage_file}} openpages-{{openpage_name}}-sts-0:/openpages-shared/openpages-backup-restore/{{storage_file}}
+    - name: Wait for Application to scale
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+          oc get sts/openpages-{{ openpage_name }}-sts | grep 1/1 | wc -l
 
-    # - name: Import Storage Backup
-    #   ansible.builtin.include_role:
-    #     name: oc_exec
-    #   vars:
-    #     oc_exec_pod_command: |
-    #       storage_file={{ storage_file }}
-    #       cd /openpages-shared/openpages-backup-restore
-    #       export OPDB_PASSWORD="$(cat "${SECRETS_PATH}/op-db-secret/openpage-pw")"
-    #       cd /opt/ibm/OpenPages/aurora/bin
-    #       name=$(basename ${storage_file} .zip)
-    #       ./OPRestore.sh $name
-    #       cd /openpages-shared/openpages-backup-restore/
-    #       rm ${storage_file}
-    #     oc_exec_pod : "openpages-{{openpage_name}}-sts-0"
+    - name: Copy Storage to App pod
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc cp {{ storage_file }} openpages-{{ openpage_name }}-sts-0:/openpages-shared/openpages-backup-restore/{{ storage_file }}
 
-    # - name: Copy Configuration to App pod
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc cp {{configuration_file}} openpages-{{openpage_name}}-sts-0:/openpages-shared/openpages-backup-restore/{{configuration_file}}
+    - name: Import Storage Backup
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          storage_file={{ storage_file }}
+          cd /openpages-shared/openpages-backup-restore
+          export OPDB_PASSWORD="$(cat "${SECRETS_PATH}/op-db-secret/openpage-pw")"
+          cd /opt/ibm/OpenPages/aurora/bin
+          name=$(basename ${storage_file} .zip)
+          ./OPRestore.sh $name
+          cd /openpages-shared/openpages-backup-restore/
+          rm ${storage_file}
+        oc_exec_pod: "openpages-{{ openpage_name }}-sts-0"
 
-    # - name: Restart Application Pod
-    #   ansible.builtin.debug:
-    #     msg: ""
+    - name: Copy Configuration to App pod
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc cp {{ configuration_file }} openpages-{{ openpage_name }}-sts-0:/openpages-shared/openpages-backup-restore/{{ configuration_file }}
 
-    # - name: Scale Application to 0
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
+    - name: Restart Application Pod
+      ansible.builtin.debug:
+        msg: ""
 
-    # - name: Wait for Application to scale
-    #   ansible.builtin.include_role:
-    #     name: wait_shell
-    #   vars:
-    #     command: |
-    #       oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
+    - name: Scale Application to 0
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
 
-    # - name: Scale Application to 1
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc scale --replicas=1 sts/openpages-{{ openpage_name }}-sts
+    - name: Wait for Application to scale
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+          oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
 
-    # - name: Wait for Application to scale
-    #   ansible.builtin.include_role:
-    #     name: wait_shell
-    #   vars:
-    #     wait_shell_command: |
-    #       oc get pods | grep openpages-openpagesinstance-cr-sts | grep 1/2 | wc -l
-    #   # the pod is not fully restarting, it will be fine at the end
+    - name: Scale Application to 1
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc scale --replicas=1 sts/openpages-{{ openpage_name }}-sts
 
-    # - name: Pause for 5 minutes to build app
-    #   ansible.builtin.pause:
-    #     minutes: 5
+    - name: Wait for Application to scale
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+          oc get pods | grep openpages-openpagesinstance-cr-sts | grep 1/2 | wc -l
+      # the pod is not fully restarting, it will be fine at the end
 
-    # - name: Stop Application Pod before DB Restore
-    #   ansible.builtin.debug:
-    #     msg: ""
+    - name: Pause for 5 minutes to build app
+      ansible.builtin.pause:
+        minutes: 5
 
-    # - name: Scale Application to 0
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
+    - name: Stop Application Pod before DB Restore
+      ansible.builtin.debug:
+        msg: ""
 
-    # - name: Wait for Application to scale
-    #   ansible.builtin.include_role:
-    #     name: wait_shell
-    #   vars:
-    #     wait_shell_command: |
-    #         oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
+    - name: Scale Application to 0
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
 
-    # - name: Copy DB Backup to DB pod, once again it can take some time
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc cp {{backup_name}}  c-db2oltp-{{instance_id}}-db2u-0:/mnt/backup/online/ --retries=-1
+    - name: Wait for Application to scale
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+            oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
 
-    # - name: Restore Database OPX in pod
-    #   ansible.builtin.include_role:
-    #     name: oc_exec
-    #   vars:
-    #     oc_exec_pod_command: |
-    #       backup_name={{ backup_name }}
-    #       timestamp=${backup_name:25:14}
-    #       echo "timestamp = $timestamp"
-    #       source ~/.bashrc
-    #       db2 connect to ${DBNAME}
-    #       db2 force application all
-    #       db2 deactivate DATABASE ${DBNAME}
-    #       db2 connect reset
-    #       db2 deactivate DATABASE ${DBNAME}
-    #       BACKUPDIR="/mnt/backup/online/"
-    #       cd $BACKUPDIR
-    #       db2ckbkp -h ./${backup_name}
-    #       db2 RESTORE DATABASE ${DBNAME} FROM /mnt/backup/online/ TAKEN AT ${timestamp} INTO ${DBNAME} LOGTARGET /mnt/backup/online/extracted_logs REPLACE EXISTING WITHOUT PROMPTING
-    #       db2 "rollforward db OPX to end of backup on all dbpartitionnums and stop overflow log path (/mnt/backup/online/extracted_logs/)"
-    #       db2 activate db ${DBNAME}
-    #       db2 connect to ${DBNAME}
-    #     oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
+    - name: Copy DB Backup to DB pod, once again it can take some time
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc cp {{ backup_name }}  c-db2oltp-{{ instance_id }}-db2u-0:/mnt/backup/online/ --retries=-1
 
-    # - name: Backup result
-    #   ansible.builtin.debug:
-    #     var: oc_exec_result.stdout_lines
-    #   tags: debug_info
+    - name: Restore Database OPX in pod
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          backup_name={{ backup_name }}
+          timestamp=${backup_name:25:14}
+          echo "timestamp = $timestamp"
+          source ~/.bashrc
+          db2 connect to ${DBNAME}
+          db2 force application all
+          db2 deactivate DATABASE ${DBNAME}
+          db2 connect reset
+          db2 deactivate DATABASE ${DBNAME}
+          BACKUPDIR="/mnt/backup/online/"
+          cd $BACKUPDIR
+          db2ckbkp -h ./${backup_name}
+          db2 RESTORE DATABASE ${DBNAME} FROM /mnt/backup/online/ TAKEN AT ${timestamp} INTO ${DBNAME} LOGTARGET /mnt/backup/online/extracted_logs REPLACE EXISTING WITHOUT PROMPTING
+          db2 "rollforward db OPX to end of backup on all dbpartitionnums and stop overflow log path (/mnt/backup/online/extracted_logs/)"
+          db2 activate db ${DBNAME}
+          db2 connect to ${DBNAME}
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
+
+    - name: Backup result
+      ansible.builtin.debug:
+        var: oc_exec_result.stdout_lines
+      tags: debug_info
 
     - name: Check DB version
       ansible.builtin.include_role:

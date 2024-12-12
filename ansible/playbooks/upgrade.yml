@@ -19,30 +19,22 @@
         ocp_pwd: "{{ target_ocp.ocp_pwd }}"
         ocp_project: "{{ target_ocp.ocp_project }}"
         operators_project: "{{ target_ocp.operators_project }}"
+        openpage_name: "{{ target_instance_id.openpage_name }}"
+        cp4d_user: "{{ openpage_users.cp4d_user }}"
 
-    # - name: Set user name
-    #   ansible.builtin.set_fact:
-    #     target_user: "{{ upgrade.target_user }}"
+    - name: Set user name
+      ansible.builtin.set_fact:
+        target_user: "{{ upgrade.target_user }}"
 
-    # - name: Set working directory
-    #   ansible.builtin.set_fact:
-    #     work_dir: "{{ upgrade.work_dir }}"
+    - name: Set working directory
+      ansible.builtin.set_fact:
+        work_dir: "{{ upgrade.work_dir }}"
 
-    # - name: Load global_config from yaml files in {{ work_dir }}
-    #   ansible.builtin.include_vars:
-    #     dir: "{{ work_dir }}"
-    #     files_matching: '.*\.yaml$'
-    #     depth: 1
-
-    # - name: Display all variables/facts known for a host
-    #   ansible.builtin.debug:
-    #     var: hostvars[inventory_hostname]
-    #   tags: debug_info
-
-    - name: Test display
-      ansible.builtin.debug:
-        var: work_dir
-      tags: debug_info
+    - name: Load global_config from yaml files in {{ work_dir }}
+      ansible.builtin.include_vars:
+        dir: "{{ work_dir }}"
+        files_matching: '.*\.yaml$'
+        depth: 1
 
     - name: Login to OCP
       ansible.builtin.include_role:
@@ -69,6 +61,12 @@
         var: run_shell_result
       tags: debug_info
 
+    - name: Get Instance Id
+      ansible.builtin.include_role:
+        name: get_instance_id
+      vars:
+        get_instance_id_openpage_name: "{{ openpage_name }}"
+
     - name: Create Role with required permissions
       ansible.builtin.include_role:
         name: run_shell
@@ -80,7 +78,6 @@
           oc create role read-ns --verb=get,list,watch --resource=namespace -n {{ operators_project }}
         run_shell_failed_when: false
 
-
     - name: Debug create role
       ansible.builtin.debug:
         var: run_shell_result
@@ -91,47 +88,47 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc adm policy add-role-to-user crud-pod-role {{ openpage_users.cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
-          oc adm policy add-role-to-user read-ns {{ openpage_users.cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
-          oc adm policy add-role-to-user crud-pod-exec-role {{ openpage_users.cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
-          oc adm policy add-role-to-user crud-pod-log-role {{ openpage_users.cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+          oc adm policy add-role-to-user crud-pod-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+          oc adm policy add-role-to-user read-ns {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+          oc adm policy add-role-to-user crud-pod-exec-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+          oc adm policy add-role-to-user crud-pod-log-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
 
     - name: Add SCC to user
       ansible.builtin.include_role:
         name: run_shell
       vars:
         run_shell_command: |
-          oc adm policy add-scc-to-user privileged {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user rook-ceph-csi {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user restricted  {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user anyuid  {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user restricted-v2  {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user nonroot-v2  {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user nonroot  {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user noobaa-db {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user noobaa-endpoint {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user hostmount-anyuid {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user machine-api-termination-handler {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user hostnetwork-v2 {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user hostnetwork {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user hostaccess {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user zen-ns-c-db2oltp-${instance_id}-scc {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user rook-ceph {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
-          oc adm policy add-scc-to-user node-exporter {{ openpage_users.cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user privileged {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user rook-ceph-csi {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user restricted  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user anyuid  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user restricted-v2  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user nonroot-v2  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user nonroot  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user noobaa-db {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user noobaa-endpoint {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostmount-anyuid {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user machine-api-termination-handler {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostnetwork-v2 {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostnetwork {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostaccess {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user zen-ns-c-db2oltp-${instance_id}-scc {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user rook-ceph {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user node-exporter {{ cp4d_user }} -n {{ ocp_project }}
 
     - name: Stop Application pod
       ansible.builtin.include_role:
         name: run_shell
       vars:
         run_shell_command: |
-          oc scale --replicas=0 sts/openpages-{{ target_instance_id.openpage_name }}-sts
+          oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
 
     - name: Wait for Application to stop
       ansible.builtin.include_role:
         name: wait_shell
       vars:
         wait_shell_command: |
-          oc get sts/openpages-{{ target_instance_id.openpage_name }}-sts | grep 0/0 | wc -l
+          oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
 
     - name: Delete the openpages operator"
       ansible.builtin.include_role:
@@ -159,7 +156,7 @@
     - name: Create upgrade DB script
       ansible.builtin.template:
         src: upgrade_db.j2
-        dest: "{{ work_dir }}/openpages_{{ target_instance_id.openpage_name }}-upgrade_db.yaml"
+        dest: "{{ work_dir }}/openpages_{{ openpage_name }}-upgrade_db.yaml"
         mode: "0755"
 
     - name: Run upgrade DB script
@@ -167,14 +164,14 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc apply -f openpages_{{ target_instance_id.openpage_name }}-debug-upgrade_db.yaml
+          oc apply -f openpages_{{ openpage_name }}-debug-upgrade_db.yaml
 
     - name: Wait for script to complete
       ansible.builtin.include_role:
         name: wait_shell
       vars:
         wait_shell_command: |
-          oc get pod openpages-{{ target_instance_id.openpage_name }}-provision-db-debug | grep Completed | wc -l
+          oc get pod openpages-{{ openpage_name }}-provision-db-debug | grep Completed | wc -l
 
     - name: Check DB version
       ansible.builtin.include_role:
@@ -202,19 +199,19 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc scale --replicas=1 sts/openpages-{{ target_instance_id.openpage_name }}-sts
+          oc scale --replicas=1 sts/openpages-{{ openpage_name }}-sts
 
     - name: Wait for Application to start
       ansible.builtin.include_role:
         name: wait_shell
       vars:
         wait_shell_command: |
-          oc get sts/openpages-{{ target_instance_id.openpage_name }}-sts | grep 1/1 | wc -l
+          oc get sts/openpages-{{ openpage_name }}-sts | grep 1/1 | wc -l
 
     - name: Create upgrade data script
       ansible.builtin.template:
         src: upgrade_loader_data.j2
-        dest: "{{ work_dir }}/openpages_{{ target_instance_id.openpage_name }}-upgrade_lodaer_data.yaml"
+        dest: "{{ work_dir }}/openpages_{{ openpage_name }}-upgrade_lodaer_data.yaml"
         mode: "0755"
 
     - name: Run upgrade data script
@@ -222,14 +219,14 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc apply -f openpages_{{ target_instance_id.openpage_name }}-upgrade_db.yaml
+          oc apply -f openpages_{{ openpage_name }}-upgrade_db.yaml
 
     - name: Wait for script to complete, it can take many hours
       ansible.builtin.include_role:
         name: wait_shell
       vars:
         wait_shell_command: |
-          oc get pod openpages-{{ target_instance_id.openpage_name }}-provision-data-debug | grep Completed | wc -l
+          oc get pod openpages-{{ openpage_name }}-provision-data-debug | grep Completed | wc -l
 
     - name: Create operator script
       ansible.builtin.template:

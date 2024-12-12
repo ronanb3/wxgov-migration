@@ -1,0 +1,26 @@
+---
+# tasks file for get_instance_id
+- name: Get openpage STS info
+  ansible.builtin.include_role:
+    name: run_shell
+  vars:
+    run_shell_command: |
+      oc get sts openpages-{{ get_instance_id_openpage_name }}-sts -o yaml
+
+- name: Debug sts_yaml
+  ansible.builtin.debug:
+    var: sts_yaml.metadata.labels["icpdsupport/serviceInstanceId"]
+    verbosity: 1
+  vars:
+    sts_yaml: "{{ run_shell_result.stdout | from_yaml }}"
+
+- name: Get instance id
+  ansible.builtin.set_fact:
+    instance_id: "{{ sts_yaml.metadata.labels['icpdsupport/serviceInstanceId'] }}"
+  vars:
+    sts_yaml: "{{ run_shell_result.stdout | from_yaml }}"
+
+- name: Debug instance_id
+  ansible.builtin.debug:
+    var: instance_id
+    verbosity: 0

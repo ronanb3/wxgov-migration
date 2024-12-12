@@ -19,7 +19,6 @@
         ocp_pwd: "{{ source_ocp.ocp_pwd }}"
         ocp_project: "{{ source_ocp.ocp_project }}"
         operators_project: "{{ source_ocp.operators_project }}"
-        instance_id: "{{ source_instance_id.instance_id }}"
         openpage_name: "{{ source_instance_id.openpage_name }}"
 
     - name: Set user name
@@ -38,16 +37,10 @@
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
 
-    # - name: Load global_config from yaml files in {{ work_dir }}
-    #   ansible.builtin.include_vars:
-    #     dir: "{{ work_dir }}"
-    #     files_matching: '.*\.yaml$'
-    #     depth: 1
-
-    # - name: Display all variables/facts known for a host
-    #   ansible.builtin.debug:
-    #     var: hostvars[inventory_hostname]
-    #   tags: debug_info
+    - name: Display all variables/facts known for a host
+      ansible.builtin.debug:
+        var: hostvars[inventory_hostname]
+        verbosity: 3
 
     - name: Test display
       ansible.builtin.debug:
@@ -62,10 +55,10 @@
           source ~/.zshrc
           oc login -u {{ ocp_user }} -p {{ ocp_pwd }} --server={{ ocp_url }}
 
-    # - name: ansible.builtin.debug Login
-    #   ansible.builtin.debug:
-    #     var: run_shell_result
-    #   tags: debug_info
+    - name: Debug login
+      ansible.builtin.debug:
+        var: run_shell_result
+        verbosity: 1
 
     - name: Set project
       ansible.builtin.include_role:
@@ -74,10 +67,16 @@
         run_shell_command: |
           oc project {{ ocp_project }}
 
-    # - name: Debug set project
-    #   ansible.builtin.debug:
-    #     var: run_shell_result
-    #   tags: debug_info
+    - name: Debug set project
+      ansible.builtin.debug:
+        var: run_shell_result
+        verbosity: 1
+
+    - name: Get Instance Id
+      ansible.builtin.include_role:
+        name: get_instance_id
+      vars:
+        get_instance_id_openpage_name: "{{ openpage_name }}"
 
     - name: Get Secrets names
       ansible.builtin.include_role:

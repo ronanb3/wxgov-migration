@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: openpages-{{ target_instance_id.openpage_name }}-provision-data-debug
-  namespace: {{ target_ocp.ocp_project }}
+  name: openpages-{{ openpage_name }}-provision-data-debug
+  namespace: {{ ocp_project }}
 spec:
   affinity:
     nodeAffinity:
@@ -18,15 +18,15 @@ spec:
   - command: ["/bin/sh", "-ec", "upgrade_loader_data.sh"]
     env:
     - name: INSTANCE_ID
-      value: "{{ target_instance_id.instance_id }}"
+      value: "{{ instance_id }}"
     - name: INSTANCE_NAME
-      value: {{ target_instance_id.openpage_name }}
+      value: {{ openpage_name }}
     - name: ZEN_CONTROL_PLANE_NS
-      value: {{ target_ocp.ocp_project }}
+      value: {{ ocp_project }}
     - name: INSTANCE_NAMESPACE
-      value: {{ target_ocp.ocp_project }}
+      value: {{ ocp_project }}
     - name: OP_CONTEXT_ROOT
-      value: openpages-{{ target_instance_id.openpage_name }}
+      value: openpages-{{ openpage_name }}
     - name: OP_EXT_HOST
       valueFrom:
         configMapKeyRef:
@@ -108,7 +108,7 @@ spec:
         path: opsystem-pw
       - key: encryption-key-pw
         path: encryption-key-pw
-      secretName: openpages-{{ target_instance_id.openpage_name }}-platform-secret
+      secretName: openpages-{{ openpage_name }}-platform-secret
   - name: op-db-secret
     secret:
       defaultMode: 420
@@ -117,11 +117,11 @@ spec:
         path: openpage-pw
       - key: db2inst1-pw
         path: db2inst1-pw
-      secretName: openpages-{{ target_instance_id.openpage_name }}-db-secret
+      secretName: openpages-{{ openpage_name }}-db-secret
   - name: op-initialpw-secret
     secret:
       defaultMode: 420
-      secretName: openpages-{{ target_instance_id.openpage_name }}-initialpw-secret
+      secretName: openpages-{{ openpage_name }}-initialpw-secret
   - name: zen-service-broker-secret
     secret:
       defaultMode: 420
