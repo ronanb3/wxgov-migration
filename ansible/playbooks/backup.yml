@@ -20,6 +20,8 @@
         ocp_project: "{{ source.ocp_project }}"
         operators_project: "{{ source.operators_project }}"
         openpage_name: "{{ source.openpage_name }}"
+        cp4d_user: "{{ openpage_users.cp4d_user }}"
+        op_user: "{{ openpage_users.op_user }}"
 
     - name: Set user name
       ansible.builtin.set_fact:
@@ -313,7 +315,7 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc get secret openpages-{{ openpage_name }}-initialpw-secret -o jsonpath="{.data.OpenPagesAdministrator}"
+          oc get secret openpages-{{ openpage_name }}-initialpw-secret -o jsonpath="{.data.{{ op_user }}}"
 
     - name: Set op_user_pwd variable
       ansible.builtin.set_fact:

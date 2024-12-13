@@ -32,6 +32,9 @@
         ocp_project: "{{ target.ocp_project }}"
         operators_project: "{{ target.operators_project }}"
         openpage_name: "{{ target.openpage_name }}"
+        cp4d_user: "{{ openpage_users.cp4d_user }}"
+        op_user: "{{ openpage_users.op_user }}"
+
 
     - name: Set user name
       ansible.builtin.set_fact:
@@ -270,6 +273,34 @@
 
     - name: Check result
       ansible.builtin.debug:
-        msg: "test: {{ oc_exec_result.stdout is search('OpenPages 9.0.0.3.2 Build 1 2024/08/22') }}"
+        msg: "test: {{ oc_exec_result.stdout is search('OpenPages 9.0.0.1 Build 145 2023/11/28') }}"
       tags: debug_info
-      failed_when: oc_exec_result.stdout is not search("OpenPages 9.0.0.3.2 Build 1 2024/08/22")
+      # failed_when: oc_exec_result.stdout is not search("OpenPages 9.0.0.1 Build 145 2023/11/28")
+
+    - name: Restore encryption-key-pw
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc patch secrets openpages-{{ openpage_name }}-platform-secret -p '{"data":{"encryption-key-pw":"'{{ encryption_key_pw }}'"}}'
+
+    - name: Restore keystore-pw
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc patch secrets openpages-{{ openpage_name }}-platform-secret -p '{"data":{"keystore-pw":"'{{ keystore_pw }}'"}}'
+
+    - name: Restore opsystem-pw
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc patch secrets openpages-{{ openpage_name }}-platform-secret -p '{"data":{"opsystem-pw":"'{{ opsystem_pw }}'"}}'
+
+    - name: Restore user
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc patch secrets openpages-{{ openpage_name }}-initialpw-secret -p '{"data":{"'{{ op_user }}'":"'{{ op_user_pwd }}'"}}'

@@ -10,6 +10,6 @@
   become_flags: "{{ become_flags }}"
   register: wait_shell_result
   failed_when: wait_shell_result.stdout == "0"
-  retries: 10
-  delay: 60
+  retries: "{{ wait_shell_retries | default(10) }}"
+  delay: "{{ wait_shell_delay | default(60) }}"
   until: wait_shell_result.stdout == "1"

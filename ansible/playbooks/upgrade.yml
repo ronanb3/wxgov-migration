@@ -8,7 +8,7 @@
   tasks:
 
     - name: Set global variables
-      ansible.builtin.include_vars: "../global-vars.yml"
+      ansible.builtin.include_vars: "../global-vars.yaml"
 
     - name: Set variables
       ansible.builtin.set_fact:
@@ -21,6 +21,7 @@
         operators_project: "{{ target.operators_project }}"
         openpage_name: "{{ target.openpage_name }}"
         cp4d_user: "{{ openpage_users.cp4d_user }}"
+        op_user: "{{ openpage_users.op_user }}"
 
     - name: Set user name
       ansible.builtin.set_fact:
@@ -135,7 +136,7 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc delete subscription.operators.coreos.com/ibm-cpd-openpages-operator clusterserviceversion.operators.coreos.com/ibm-cpd-openpages-operator.v7.2.0 -n {{ ocp_project }}
+          oc delete subscription.operators.coreos.com/ibm-cpd-openpages-operator clusterserviceversion.operators.coreos.com/ibm-cpd-openpages-operator.v7.2.0 -n {{ operators_project }}
 
     - name: Get Provisioner Image Digest
       ansible.builtin.include_role:
@@ -164,14 +165,16 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc apply -f openpages_{{ openpage_name }}-debug-upgrade_db.yaml
+          oc apply -f openpages_{{ openpage_name }}-upgrade_db.yaml
 
-    - name: Wait for script to complete
+    - name: Wait for script to complete, it can take a lot of time, many hours
       ansible.builtin.include_role:
         name: wait_shell
       vars:
         wait_shell_command: |
           oc get pod openpages-{{ openpage_name }}-provision-db-debug | grep Completed | wc -l
+        wait_shell_retries: 50
+        wait_shell_delay: 300
 
     - name: Check DB version
       ansible.builtin.include_role:
@@ -211,7 +214,7 @@
     - name: Create upgrade data script
       ansible.builtin.template:
         src: upgrade_loader_data.j2
-        dest: "{{ work_dir }}/openpages_{{ openpage_name }}-upgrade_lodaer_data.yaml"
+        dest: "{{ work_dir }}/openpages_{{ openpage_name }}-upgrade_loader_data.yaml"
         mode: "0755"
 
     - name: Run upgrade data script
@@ -219,7 +222,7 @@
         name: run_shell
       vars:
         run_shell_command: |
-          oc apply -f openpages_{{ openpage_name }}-upgrade_db.yaml
+          oc apply -f openpages_{{ openpage_name }}-upgrade_loader_data.yaml
 
     - name: Wait for script to complete, it can take many hours
       ansible.builtin.include_role:
@@ -227,6 +230,8 @@
       vars:
         wait_shell_command: |
           oc get pod openpages-{{ openpage_name }}-provision-data-debug | grep Completed | wc -l
+        wait_shell_retries: 50
+        wait_shell_delay: 300
 
     - name: Create operator script
       ansible.builtin.template:
