@@ -68,75 +68,75 @@
       vars:
         get_instance_id_openpage_name: "{{ openpage_name }}"
 
-    # - name: Create Role with required permissions
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc create role crud-pod-role --verb=get,list,create,update,watch,patch --resource=pod -n {{ operators_project }}
-    #       oc create role crud-pod-exec-role --verb=get,list,create,update,watch,patch --resource=pods/exec -n {{ operators_project }}
-    #       oc create role crud-pod-log-role --verb=get,list,create,update,watch,patch --resource=pods/log -n {{ operators_project }}
-    #       oc create role read-ns --verb=get,list,watch --resource=namespace -n {{ operators_project }}
-    #     run_shell_failed_when: false
+    - name: Create Role with required permissions
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc create role crud-pod-role --verb=get,list,create,update,watch,patch --resource=pod -n {{ operators_project }}
+          oc create role crud-pod-exec-role --verb=get,list,create,update,watch,patch --resource=pods/exec -n {{ operators_project }}
+          oc create role crud-pod-log-role --verb=get,list,create,update,watch,patch --resource=pods/log -n {{ operators_project }}
+          oc create role read-ns --verb=get,list,watch --resource=namespace -n {{ operators_project }}
+        run_shell_failed_when: false
 
-    # - name: Debug create role
-    #   ansible.builtin.debug:
-    #     var: run_shell_result
-    #   tags: debug_info
+    - name: Debug create role
+      ansible.builtin.debug:
+        var: run_shell_result
+      tags: debug_info
 
-    # - name: Add role to user
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc adm policy add-role-to-user crud-pod-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
-    #       oc adm policy add-role-to-user read-ns {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
-    #       oc adm policy add-role-to-user crud-pod-exec-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
-    #       oc adm policy add-role-to-user crud-pod-log-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+    - name: Add role to user
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc adm policy add-role-to-user crud-pod-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+          oc adm policy add-role-to-user read-ns {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+          oc adm policy add-role-to-user crud-pod-exec-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
+          oc adm policy add-role-to-user crud-pod-log-role {{ cp4d_user }} --role-namespace={{ ocp_project }} -n {{ ocp_project }}
 
-    # - name: Add SCC to user
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc adm policy add-scc-to-user privileged {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user rook-ceph-csi {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user restricted  {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user anyuid  {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user restricted-v2  {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user nonroot-v2  {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user nonroot  {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user noobaa-db {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user noobaa-endpoint {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user hostmount-anyuid {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user machine-api-termination-handler {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user hostnetwork-v2 {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user hostnetwork {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user hostaccess {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user zen-ns-c-db2oltp-${instance_id}-scc {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user rook-ceph {{ cp4d_user }} -n {{ ocp_project }}
-    #       oc adm policy add-scc-to-user node-exporter {{ cp4d_user }} -n {{ ocp_project }}
+    - name: Add SCC to user
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc adm policy add-scc-to-user privileged {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user rook-ceph-csi {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user restricted  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user anyuid  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user restricted-v2  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user nonroot-v2  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user nonroot  {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user noobaa-db {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user noobaa-endpoint {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostmount-anyuid {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user machine-api-termination-handler {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostnetwork-v2 {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostnetwork {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user hostaccess {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user zen-ns-c-db2oltp-${instance_id}-scc {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user rook-ceph {{ cp4d_user }} -n {{ ocp_project }}
+          oc adm policy add-scc-to-user node-exporter {{ cp4d_user }} -n {{ ocp_project }}
 
-    # - name: Stop Application pod
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
+    - name: Stop Application pod
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc scale --replicas=0 sts/openpages-{{ openpage_name }}-sts
 
-    # - name: Wait for Application to stop
-    #   ansible.builtin.include_role:
-    #     name: wait_shell
-    #   vars:
-    #     wait_shell_command: |
-    #       oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
+    - name: Wait for Application to stop
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+          oc get sts/openpages-{{ openpage_name }}-sts | grep 0/0 | wc -l
 
-    # - name: Delete the openpages operator"
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc delete subscription.operators.coreos.com/ibm-cpd-openpages-operator clusterserviceversion.operators.coreos.com/ibm-cpd-openpages-operator.v7.2.0 -n {{ operators_project }}
+    - name: Delete the openpages operator"
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc delete subscription.operators.coreos.com/ibm-cpd-openpages-operator clusterserviceversion.operators.coreos.com/ibm-cpd-openpages-operator.v7.2.0 -n {{ operators_project }}
 
     - name: Get Provisioner Image Digest
       ansible.builtin.include_role:
@@ -154,48 +154,48 @@
         var: provisioner_image_digest
       tags: debug_info
 
-    # - name: Create upgrade DB script
-    #   ansible.builtin.template:
-    #     src: upgrade_db.j2
-    #     dest: "{{ work_dir }}/openpages_{{ openpage_name }}-upgrade_db.yaml"
-    #     mode: "0755"
+    - name: Create upgrade DB script
+      ansible.builtin.template:
+        src: upgrade_db.j2
+        dest: "{{ work_dir }}/openpages_{{ openpage_name }}-upgrade_db.yaml"
+        mode: "0755"
 
-    # - name: Run upgrade DB script
-    #   ansible.builtin.include_role:
-    #     name: run_shell
-    #   vars:
-    #     run_shell_command: |
-    #       oc apply -f openpages_{{ openpage_name }}-upgrade_db.yaml
+    - name: Run upgrade DB script
+      ansible.builtin.include_role:
+        name: run_shell
+      vars:
+        run_shell_command: |
+          oc apply -f openpages_{{ openpage_name }}-upgrade_db.yaml
 
-    # - name: Wait for script to complete, it can take a lot of time, many hours
-    #   ansible.builtin.include_role:
-    #     name: wait_shell
-    #   vars:
-    #     wait_shell_command: |
-    #       oc get pod openpages-{{ openpage_name }}-provision-db-debug | grep Completed | wc -l
-    #     wait_shell_retries: 100
-    #     wait_shell_delay: 300
+    - name: Wait for script to complete, it can take a lot of time, many hours
+      ansible.builtin.include_role:
+        name: wait_shell
+      vars:
+        wait_shell_command: |
+          oc get pod openpages-{{ openpage_name }}-provision-db-debug | grep Completed | wc -l
+        wait_shell_retries: 100
+        wait_shell_delay: 300
 
-    # - name: Check DB version
-    #   ansible.builtin.include_role:
-    #     name: oc_exec
-    #   vars:
-    #     oc_exec_pod_command: |
-    #       source ~/.bashrc
-    #       db2 connect to ${DBNAME}
-    #       db2 -x "select VERSION from openpage.schemaversion"
-    #     oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
+    - name: Check DB version
+      ansible.builtin.include_role:
+        name: oc_exec
+      vars:
+        oc_exec_pod_command: |
+          source ~/.bashrc
+          db2 connect to ${DBNAME}
+          db2 -x "select VERSION from openpage.schemaversion"
+        oc_exec_pod: "c-db2oltp-{{ instance_id }}-db2u-0"
 
-    # - name: Check result
-    #   ansible.builtin.debug:
-    #     var: oc_exec_result.stdout
-    #   tags: debug_info
+    - name: Check result
+      ansible.builtin.debug:
+        var: oc_exec_result.stdout
+      tags: debug_info
 
-    # - name: Check result
-    #   ansible.builtin.debug:
-    #     msg: "test: {{ oc_exec_result.stdout is search('OpenPages 9.0.0.3.2 Build 1 2024/08/22') }}"
-    #   tags: debug_info
-    #   failed_when: oc_exec_result.stdout is not search("OpenPages 9.0.0.3.2 Build 1 2024/08/22")
+    - name: Check result
+      ansible.builtin.debug:
+        msg: "test: {{ oc_exec_result.stdout is search('OpenPages 9.0.0.3.2 Build 1 2024/08/22') }}"
+      tags: debug_info
+      failed_when: oc_exec_result.stdout is not search("OpenPages 9.0.0.3.2 Build 1 2024/08/22")
 
     - name: Start Application pod
       ansible.builtin.include_role:
