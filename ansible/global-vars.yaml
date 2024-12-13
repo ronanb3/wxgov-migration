@@ -15,7 +15,7 @@ target:
   ocp_pwd: "qsL7w-nLRzs-tXLjZ-dBg6z"
   ocp_project: "cpd"
   operators_project: "cpd-operators"
-  openpage_name: "rbo-openpages-2"
+  openpage_name: "rbo-openpages-3"
 openpage_users:
   op_user: "OpenPagesAdministrator"
   cp4d_user: "cp4dadmin"
